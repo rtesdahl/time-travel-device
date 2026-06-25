@@ -345,8 +345,9 @@
                     const deltaX = clientX - wheelStartX.current;
                     
                     // Drag mapping: every 15px of motion changes the step selection
+                    // Changing to negative stepDiff subtraction makes dragging pull the wheel naturally
                     const stepDiff = Math.round(deltaX / 15);
-                    let newVal = wheelStartVal.current + stepDiff;
+                    let newVal = wheelStartVal.current - stepDiff;
                     if (newVal < 1) newVal = 1;
                     if (newVal > 10) newVal = 10;
                     
@@ -449,11 +450,11 @@
             const year2 = DESTINATIONS[upperIndex].year;
             const interpolatedYear = Math.round(year1 + fraction * (year2 - year1));
             const nearestIntIndex = Math.round(clampedFloat);
-            const isDialAnomaly = Math.abs(clampedFloat - nearestIntIndex) > 0.05; 
+            const isAnomaly = Math.abs(clampedFloat - nearestIntIndex) > 0.05; 
             
             const bleedActive = paradoxLevel > 0 && paradoxType === 2;
 
-            const baseDest = isDialAnomaly ? {
+            const baseDest = isAnomaly ? {
                 year: interpolatedYear,
                 name: generateJumble(interpolatedYear, 12),
                 location: generateJumble(interpolatedYear + 3, 14),
@@ -644,17 +645,16 @@
                                                 }`}
                                             >
                                                 {/* Scrolling index labels and markers */}
+                                                {/* Formula updated dynamically to align exactly centered based on (fluxInterval - 5.5) * -48px spacing */}
                                                 <div 
-                                                    className="absolute inset-y-0 flex items-center justify-center gap-4 transition-transform duration-75" 
-                                                    style={{ transform: `translateX(${(fluxInterval - 5) * -30}px)` }}
+                                                    className={`absolute flex items-center justify-center gap-4 ${isWheelDragging ? 'transition-none' : 'transition-transform duration-300 ease-out'}`}
+                                                    style={{ transform: `translateX(${(fluxInterval - 5.5) * -48}px)` }}
                                                 >
-                                                    {Array.from({length: 12}).map((_, i) => {
-                                                        const tickVal = i - 1; 
-                                                        if (tickVal < 1 || tickVal > 10) return <div key={i} className="w-8" />;
+                                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((tickVal) => {
                                                         const isSelected = tickVal === fluxInterval;
                                                         return (
                                                             <div 
-                                                                key={i} 
+                                                                key={tickVal} 
                                                                 className={`w-8 text-center font-mono transition-all duration-150 ${
                                                                     isSelected 
                                                                     ? 'text-fuchsia-400 font-black text-lg scale-125 drop-shadow-[0_0_8px_#d946ef]' 
