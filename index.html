@@ -222,6 +222,8 @@
 
             const [paradoxLevel, setParadoxLevel] = useState(0); 
             const [paradoxType, setParadoxType] = useState(1); 
+            
+            const [showRecallConfirm, setShowRecallConfirm] = useState(false);
             const [emergency, setEmergency] = useState(false);
             
             const paradoxTimerRef = useRef(null);
@@ -255,20 +257,20 @@
                 return () => clearInterval(interval);
             }, [paradoxLevel]);
 
-            const animateToFloatIndex = (targetValue) => {
+            // Upgraded animation to accept custom durations (crucial for 4s recall animation)
+            const animateToFloatIndex = (targetValue, customDuration = 1200) => {
                 if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
                 
                 const startValue = floatIndexRef.current;
                 const distance = targetValue - startValue;
                 if (distance === 0) return;
 
-                const duration = 1200; 
                 let startTime = null;
 
                 const step = (timestamp) => {
                     if (!startTime) startTime = timestamp;
                     const progress = timestamp - startTime;
-                    let percent = progress / duration;
+                    let percent = progress / customDuration;
                     if (percent >= 1) percent = 1;
                     const ease = percent < 0.5 ? 4 * percent * percent * percent : 1 - Math.pow(-2 * percent + 2, 3) / 2;
                     setFloatIndex(startValue + distance * ease);
@@ -323,7 +325,6 @@
                 }
             };
 
-            // Fidget Interactions
             const cycleSlicing = () => {
                 setSliceModeIndex(prev => (prev + 1) % SLICE_MODES.length);
                 handleFidget(10);
@@ -334,10 +335,18 @@
                 handleFidget(10);
             };
 
-            const triggerEmergency = () => {
+            // Enhanced Emergency Handlers
+            const handleRecallPress = () => {
                 handleFidget(10);
-                if (paradoxLevel > 0) return; 
-                setEmergency(true); setStatus("TIMELINE SEVERED.");
+                if (paradoxLevel > 0) return; // If paradox is active, button just acts as a stabilizer, no emergency trigger
+                setShowRecallConfirm(true);
+            };
+
+            const executeRecall = () => {
+                setShowRecallConfirm(false);
+                setEmergency(true); 
+                setStatus("TIMELINE SEVERED. RETURNING TO 2026.");
+                animateToFloatIndex(5, 4000); // 5 is the index of "2026 Present Anchor"
                 setTimeout(() => setEmergency(false), 4000);
             };
 
@@ -382,7 +391,6 @@
                 return () => {
                     window.removeEventListener('mousemove', handleWheelMove);
                     window.removeEventListener('mouseup', handleWheelUp);
-                    window.removeEventListener('touchmove', handleWheelMove);
                     window.removeEventListener('touchmove', handleWheelMove);
                     window.removeEventListener('touchend', handleWheelUp);
                 };
@@ -463,14 +471,12 @@
             const wrapperClasses = `h-full flex flex-col gap-2 relative z-10 ${paradoxLevel > 0 && paradoxType === 1 ? 'animate-subtle-shake' : ''}`;
             const displayFlux = isWheelDragging ? dragFloat : fluxInterval;
             
-            // Dynamic Button Styling Checkers
             const isSlicingActive = sliceModeIndex !== 0;
 
             return (
-                <div className="w-full h-full relative animate-crt-flicker">
+                <div className="w-full h-full relative animate-crt-flicker flex flex-col justify-between">
                     {/* Background Overlays for Effects */}
-                    {jumpState === "jumping" && <div className="absolute inset-0 glitch-bg z-50"></div>}
-                    {emergency && <div className="absolute inset-0 bg-red-600/30 animate-pulse z-50 mix-blend-color-burn flex items-center justify-center"><h1 className="text-4xl text-red-500 font-black crt-flicker border-y-4 border-red-500 bg-black/80 w-full text-center py-4">TIMELINE SEVERED</h1></div>}
+                    {jumpState === "jumping" && <div className="absolute inset-0 glitch-bg z-[60]"></div>}
                     
                     {paradoxLevel > 0 && paradoxType === 1 && <div className="absolute inset-0 z-0 pointer-events-none vignette-pulse"></div>}
 
@@ -554,7 +560,7 @@
                                 </div>
                             </div>
 
-                            {/* TYPE 2 OVERLAY: Blurs & obscures ONLY the top portion cards, centering the percentage text */}
+                            {/* TYPE 2 OVERLAY */}
                             {paradoxLevel > 0 && paradoxType === 2 && (
                                 <div className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center bg-black/60 backdrop-blur-[4px] rounded border-2 border-red-900/80 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
                                     <div className="text-red-500 font-black text-5xl sm:text-6xl crt-flicker chromatic-aberration mix-blend-screen drop-shadow-[0_0_20px_rgba(239,68,68,0.85)] flex flex-col items-center">
@@ -564,7 +570,7 @@
                                 </div>
                             )}
 
-                            {/* TYPE 1 OVERLAY: Displayed directly on the panel in an active pulsing banner */}
+                            {/* TYPE 1 OVERLAY */}
                             {paradoxLevel > 0 && paradoxType === 1 && (
                                 <div className="absolute inset-x-0 top-1/3 z-30 pointer-events-none flex justify-center shadow-2xl">
                                     <div className="bg-red-950/95 border-y-4 border-red-500 text-red-100 font-black text-2xl text-center py-5 px-4 w-full animate-pulse crt-flicker">
@@ -607,7 +613,7 @@
                             
                             {/* RECALL BLOCK */}
                             <button 
-                                onClick={triggerEmergency} 
+                                onClick={handleRecallPress} 
                                 className={`w-[72px] h-[72px] shrink-0 rounded-full border-4 border-red-900 bg-red-950/50 text-red-500 text-[12px] font-black flex flex-col items-center justify-center gap-0.5 active:bg-red-600 active:text-white shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-colors ${paradoxLevel > 0 ? 'border-red-500 bg-red-900 text-red-200' : ''}`}
                             >
                                 <IconAlert />
@@ -707,7 +713,50 @@
                                 {status}
                             </div>
                         </div>
+
                     </div>
+
+                    {/* CUSTOM RECALL CONFIRMATION MODAL */}
+                    {showRecallConfirm && (
+                        <div className="absolute inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                            <div className="bg-neutral-950 border-2 border-red-800 rounded-lg p-5 max-w-sm w-full shadow-[0_0_30px_rgba(220,38,38,0.3)]">
+                                <div className="flex items-center gap-3 mb-4 text-red-500 crt-flicker">
+                                    <IconAlert />
+                                    <h2 className="font-black tracking-widest text-lg uppercase">Emergency Recall</h2>
+                                </div>
+                                <p className="text-red-300 text-xs mb-6 font-mono leading-relaxed bg-red-950/30 p-3 rounded border border-red-900/50">
+                                    WARNING: Forcible tether severance will snap the lattice back to the 2026 anchor. Destructive temporal shearing may occur. 
+                                    <br/><br/>Proceed with translation?
+                                </p>
+                                <div className="flex gap-3 h-12">
+                                    <button 
+                                        onClick={() => setShowRecallConfirm(false)} 
+                                        className="flex-1 border border-cyan-800 bg-cyan-950/40 text-cyan-400 text-xs font-bold tracking-wider rounded transition-colors active:bg-cyan-900 hover:bg-cyan-900/60"
+                                    >
+                                        ABORT
+                                    </button>
+                                    <button 
+                                        onClick={executeRecall} 
+                                        className="flex-1 border border-red-500 bg-red-600 text-white text-xs font-black tracking-widest rounded shadow-[0_0_15px_rgba(220,38,38,0.5)] transition-colors active:bg-red-700 hover:bg-red-500"
+                                    >
+                                        EXECUTE
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Z-INDEX FIXED EMERGENCY OVERLAY */}
+                    {emergency && (
+                        <div className="absolute inset-0 z-[110] bg-red-600/20 flex flex-col items-center justify-center pointer-events-none">
+                            <div className="w-full bg-black border-y-4 border-red-600 shadow-[0_0_40px_rgba(220,38,38,0.8)] py-8 flex justify-center backdrop-blur-md">
+                                <h1 className="text-4xl sm:text-5xl text-red-500 font-black crt-flicker tracking-[0.2em] text-center drop-shadow-[0_0_10px_rgba(220,38,38,1)]">
+                                    TIMELINE SEVERED
+                                </h1>
+                            </div>
+                        </div>
+                    )}
+
                 </div>
             );
         }
