@@ -46,15 +46,13 @@
         @keyframes marquee { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-50%, 0, 0); } }
         .marquee-content { display: inline-block; white-space: nowrap; animation: marquee 13s linear infinite; }
 
-        /* Reactive Status Indicator Flash: 0.25s Flash, 0.25s Pause, Repeated Once */
+        /* Reactive Status Indicator Flash: Single 0.25s Flash */
         @keyframes status-pulse {
             0% { background-color: rgba(6, 182, 212, 0.5); box-shadow: inset 0 0 15px rgba(6, 182, 212, 0.3); }
-            25% { background-color: rgba(0, 0, 0, 1); box-shadow: none; }
-            50% { background-color: rgba(6, 182, 212, 0.5); box-shadow: inset 0 0 15px rgba(6, 182, 212, 0.3); }
-            75%, 100% { background-color: rgba(0, 0, 0, 1); box-shadow: none; }
+            100% { background-color: rgba(0, 0, 0, 1); box-shadow: none; }
         }
         .animate-status-flash {
-            animation: status-pulse 1s cubic-bezier(0.25, 1, 0.5, 1) 1;
+            animation: status-pulse 0.25s linear 1;
         }
     </style>
 </head>
@@ -66,15 +64,15 @@
         const { useState, useEffect, useRef } = React;
 
         const DESTINATIONS = [
-            { year: 1888, location: "London, UK", name: "Victorian Anchor", news: ["FOG ROLLS INTO CITY", "STRANGE LIGHTS REPORTED ABOVE THAMES"] },
-            { year: 1912, location: "North Atlantic", name: "Iceberg Sector", news: ["VESSEL STRUCK BY UNKNOWN SUBMERGED OBJECT", "DISTRESS CALLS SILENCED"] },
+            { year: 1888, location: "London, England", name: "Victorian Anchor", news: ["FOG ROLLS INTO CITY", "STRANGE LIGHTS REPORTED ABOVE THAMES"] },
+            { year: 1912, location: "North Atlantic Ocean", name: "Iceberg Sector", news: ["VESSEL STRUCK BY UNKNOWN SUBMERGED OBJECT", "DISTRESS CALLS SILENCED"] },
             { year: 1929, location: "New York, USA", name: "Market Crash", news: ["MARKET SPIRALS", "UNKNOWN INDIVIDUAL SEEN BUYING THOUSANDS OF SHARES"] },
-            { year: 1969, location: "Lunar Surface", name: "Apollo 11", news: ["ONE SMALL STEP RECORDED", "RADIO STATIC INTERFERENCE HIGH"] },
-            { year: 1985, location: "California, USA", name: "Neon Nexus", news: ["TEENAGER CLAIMS TO HAVE INVENTED TIME MACHINE", "MALL PARKING LOT INCIDENT"] },
-            { year: 2026, location: "The Party Estate", name: "Present Anchor", news: ["SYSTEM: LOCAL ANCHOR POINT SECURED", "NO ANOMALIES DETECTED"] },
-            { year: 2150, location: "Mars Colony", name: "Red Dust", news: ["ATMOSPHERIC DOME COMPROMISED", "RESCUE SHIPS DISPATCHED"] },
-            { year: 2200, location: "Orbital Station", name: "Void Gateway", news: ["FIRST INTERSTELLAR JUMP COMMENCING", "SIGNAL STRENGTH CRITICAL"] },
-            { year: 3000, location: "New New York", name: "Future Apex", news: ["TIME FLOW NON-LINEAR", "PROBABILITY CONSTANT SHIFTING"] }
+            { year: 1969, location: "Tranquility Base, Moon", name: "Apollo 11 Landing", news: ["ONE SMALL STEP RECORDED", "RADIO STATIC INTERFERENCE HIGH"] },
+            { year: 1985, location: "Hill Valley, California", name: "Neon Nexus", news: ["TEENAGER CLAIMS TO HAVE INVENTED TIME MACHINE", "MALL PARKING LOT INCIDENT"] },
+            { year: 2026, location: "The Interstice Resort", name: "Present Anchor", news: ["SYSTEM: LOCAL ANCHOR POINT SECURED", "NO ANOMALIES DETECTED"] },
+            { year: 2150, location: "Cydonia, Mars", name: "Red Dust Colony", news: ["ATMOSPHERIC DOME COMPROMISED", "RESCUE SHIPS DISPATCHED"] },
+            { year: 2200, location: "L5 Lagrange Point", name: "Void Gateway Station", news: ["FIRST INTERSTELLAR JUMP COMMENCING", "SIGNAL STRENGTH CRITICAL"] },
+            { year: 3000, location: "New New York, Earth", name: "Future Apex Metropolis", news: ["TIME FLOW NON-LINEAR", "PROBABILITY CONSTANT SHIFTING"] }
         ];
 
         const generateJumble = (seed, length) => {
@@ -359,6 +357,7 @@
             const displayDest = isAnomaly ? {
                 year: interpolatedYear,
                 name: generateJumble(interpolatedYear, 12),
+                location: generateJumble(interpolatedYear + 3, 14),
                 news: [generateJumble(interpolatedYear+1, 30), generateJumble(interpolatedYear+2, 35)],
                 isAnomaly: true
             } : DESTINATIONS[nearestIntIndex];
@@ -399,12 +398,12 @@
                         </div>
                     </div>
 
-                    {/* 2. PRESENT */}
+                    {/* 2. PRESENT (Anchor set to 'The Interstice Resort') */}
                     <div className="border border-cyan-800 bg-neutral-900/80 p-2 rounded shrink-0">
                         <div className="text-[9px] text-cyan-600 mb-0.5">LOCAL SIDEREAL TIME</div>
                         <div className="flex items-end justify-between">
                             <div className="text-2xl font-black">{timeStr}<span className="text-xs text-cyan-600">.{msStr}</span></div>
-                            <div className="text-[10px] text-right text-cyan-500 max-w-[100px] leading-tight truncate">ANCHOR: {DESTINATIONS[5].location}</div>
+                            <div className="text-[10px] text-right text-cyan-500 max-w-[170px] leading-tight truncate">ANCHOR: The Interstice Resort</div>
                         </div>
                     </div>
 
@@ -437,7 +436,7 @@
                                         onChange={(e) => animateToFloatIndex(parseInt(e.target.value))}
                                     >
                                         <option value="" disabled>{isAnomaly ? "[ LOST SIGNAL ]" : "HISTORY LOG"}</option>
-                                        {DESTINATIONS.map((d, i) => <option key={i} value={i}>{d.year} - {d.name}</option>)}
+                                        {DESTINATIONS.map((d, i) => <option key={i} value={i}>{d.year} - {d.location}</option>)}
                                     </select>
                                     <div className={`pointer-events-none absolute inset-y-0 right-1.5 flex items-center px-1 text-xs ${displayDest.isAnomaly ? 'text-red-500' : 'text-fuchsia-500'}`}>▼</div>
                                 </div>
@@ -447,9 +446,10 @@
                                     {displayDest.year}
                                 </div>
                                 
-                                {/* - Selected destination name/label */}
-                                <div className={`text-[11px] font-bold tracking-wider truncate ${displayDest.isAnomaly ? 'text-red-300' : 'text-fuchsia-300'}`}>
-                                    {displayDest.name}
+                                {/* - Selected destination name & location label */}
+                                <div className={`text-[11px] font-bold tracking-wider truncate flex flex-col ${displayDest.isAnomaly ? 'text-red-300' : 'text-fuchsia-300'}`}>
+                                    <span className="truncate">{displayDest.name}</span>
+                                    <span className="text-[9px] opacity-80 truncate">✦ {displayDest.location}</span>
                                 </div>
                             </div>
                         </div>
