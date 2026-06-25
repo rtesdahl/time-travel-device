@@ -69,7 +69,7 @@
             { year: 1929, location: "New York, USA", name: "Market Crash", news: ["MARKET SPIRALS", "UNKNOWN INDIVIDUAL SEEN BUYING THOUSANDS OF SHARES"] },
             { year: 1969, location: "Tranquility Base, Moon", name: "Apollo 11 Landing", news: ["ONE SMALL STEP RECORDED", "RADIO STATIC INTERFERENCE HIGH"] },
             { year: 1985, location: "Hill Valley, California", name: "Neon Nexus", news: ["TEENAGER CLAIMS TO HAVE INVENTED TIME MACHINE", "MALL PARKING LOT INCIDENT"] },
-            { year: 2026, location: "The Interstice Resort", name: "Present Anchor", news: ["SYSTEM: LOCAL ANCHOR POINT SECURED", "NO ANOMALIES DETECTED"] },
+            { year: 2026, location: "The Party Estate", name: "Present Anchor", news: ["SYSTEM: LOCAL ANCHOR POINT SECURED", "NO ANOMALIES DETECTED"] },
             { year: 2150, location: "Cydonia, Mars", name: "Red Dust Colony", news: ["ATMOSPHERIC DOME COMPROMISED", "RESCUE SHIPS DISPATCHED"] },
             { year: 2200, location: "L5 Lagrange Point", name: "Void Gateway Station", news: ["FIRST INTERSTELLAR JUMP COMMENCING", "SIGNAL STRENGTH CRITICAL"] },
             { year: 3000, location: "New New York, Earth", name: "Future Apex Metropolis", news: ["TIME FLOW NON-LINEAR", "PROBABILITY CONSTANT SHIFTING"] }
@@ -486,9 +486,17 @@
                             <div className="w-full px-2">
                                 <div className="text-[10px] text-fuchsia-500 mb-1 text-center font-bold tracking-widest">SWIPE TO CONFIRM</div>
                                 <div className="relative bg-neutral-900 rounded-full h-8 border border-fuchsia-900 overflow-hidden shadow-[inset_0_0_10px_rgba(0,0,0,0.8)]">
+                                    {/* Filled bar progress (Tracks exactly 1:1 using percentage) */}
                                     <div className="absolute left-0 top-0 bottom-0 bg-fuchsia-600/40 pointer-events-none" style={{width: `${swipeValue}%`, transition: swipeValue == 0 ? 'width 0.3s' : 'none'}}></div>
                                     <input type="range" min="0" max="100" value={swipeValue} onChange={handleSwipeChange} onTouchEnd={handleSwipeEnd} onMouseUp={handleSwipeEnd} className="absolute inset-0 w-full h-full opacity-0 z-20 cursor-ew-resize" />
-                                    <div className="absolute top-0.5 bottom-0.5 left-1 w-12 bg-fuchsia-500 rounded-full flex items-center justify-center shadow-[0_0_10px_#d946ef] pointer-events-none text-black font-black" style={{transform: `translateX(calc(${swipeValue}vw * 0.70))`, transition: swipeValue == 0 ? 'transform 0.3s' : 'none'}}>»</div>
+                                    {/* Handle button element (Perfect relative mapping with clean borders to eliminate lagging and viewport discrepancies) */}
+                                    <div className="absolute top-0.5 bottom-0.5 w-12 bg-fuchsia-500 rounded-full flex items-center justify-center shadow-[0_0_10px_#d946ef] pointer-events-none text-black font-black" 
+                                         style={{
+                                             left: `calc(4px + (${swipeValue} * (100% - 56px) / 100))`,
+                                             transition: swipeValue == 0 ? 'left 0.3s' : 'none'
+                                         }}>
+                                         »
+                                    </div>
                                 </div>
                             </div>
                         )}
