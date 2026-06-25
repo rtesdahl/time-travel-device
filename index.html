@@ -42,17 +42,31 @@
         .crt-flicker { animation: flicker 0.15s infinite; }
         @keyframes flicker { 0% { opacity: 0.9; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
 
-        /* Ticker: 50% Faster Speed (reduced animation cycle to 13 seconds) */
         @keyframes marquee { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-50%, 0, 0); } }
         .marquee-content { display: inline-block; white-space: nowrap; animation: marquee 13s linear infinite; }
 
-        /* Reactive Status Indicator Flash: Single 0.25s Flash */
         @keyframes status-pulse {
             0% { background-color: rgba(6, 182, 212, 0.5); box-shadow: inset 0 0 15px rgba(6, 182, 212, 0.3); }
             100% { background-color: rgba(0, 0, 0, 1); box-shadow: none; }
         }
-        .animate-status-flash {
-            animation: status-pulse 0.25s linear 1;
+        .animate-status-flash { animation: status-pulse 0.25s linear 1; }
+
+        @keyframes subtle-shake {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            20% { transform: translate(-1px, 1.5px) rotate(-0.5deg); }
+            40% { transform: translate(1.5px, -1px) rotate(0.5deg); }
+            60% { transform: translate(-1.5px, 0px) rotate(-0.5deg); }
+            80% { transform: translate(1px, 1px) rotate(0.5deg); }
+        }
+        .animate-subtle-shake { animation: subtle-shake 0.15s infinite; }
+        
+        .chromatic-aberration { 
+            text-shadow: 2px 0px 0px rgba(255, 0, 0, 0.8), -2px 0px 0px rgba(0, 255, 255, 0.8); 
+        }
+        
+        .vignette-pulse {
+            box-shadow: inset 0 0 15vh 2vw rgba(220, 38, 38, 0.7);
+            animation: flicker 0.2s infinite;
         }
     </style>
 </head>
@@ -69,7 +83,7 @@
             { year: 1929, location: "New York, USA", name: "Market Crash", news: ["MARKET SPIRALS", "UNKNOWN INDIVIDUAL SEEN BUYING THOUSANDS OF SHARES"] },
             { year: 1969, location: "Tranquility Base, Moon", name: "Apollo 11 Landing", news: ["ONE SMALL STEP RECORDED", "RADIO STATIC INTERFERENCE HIGH"] },
             { year: 1985, location: "Hill Valley, California", name: "Neon Nexus", news: ["TEENAGER CLAIMS TO HAVE INVENTED TIME MACHINE", "MALL PARKING LOT INCIDENT"] },
-            { year: 2026, location: "The Party Estate", name: "Present Anchor", news: ["SYSTEM: LOCAL ANCHOR POINT SECURED", "NO ANOMALIES DETECTED"] },
+            { year: 2026, location: "The Interstice Resort", name: "Present Anchor", news: ["SYSTEM: LOCAL ANCHOR POINT SECURED", "NO ANOMALIES DETECTED"] },
             { year: 2150, location: "Cydonia, Mars", name: "Red Dust Colony", news: ["ATMOSPHERIC DOME COMPROMISED", "RESCUE SHIPS DISPATCHED"] },
             { year: 2200, location: "L5 Lagrange Point", name: "Void Gateway Station", news: ["FIRST INTERSTELLAR JUMP COMMENCING", "SIGNAL STRENGTH CRITICAL"] },
             { year: 3000, location: "New New York, Earth", name: "Future Apex Metropolis", news: ["TIME FLOW NON-LINEAR", "PROBABILITY CONSTANT SHIFTING"] }
@@ -88,7 +102,6 @@
 
         const IconAlert = () => <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4m0 4h.01"/></svg>;
 
-        // --- CYBERPUNK KNOB (JS ANIMATION DRIVEN, ENLARGED) ---
         const CyberKnob = ({ floatIndex, maxIndex, onChange, onSnap, onDragStart }) => {
             const knobRef = useRef(null);
             const [isDragging, setIsDragging] = useState(false);
@@ -170,11 +183,9 @@
                     <div ref={knobRef} onMouseDown={handleStart} onTouchStart={handleStart}
                          className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-neutral-900 border-4 border-cyan-900 shadow-[0_0_20px_rgba(6,182,212,0.4)] relative cursor-pointer flex items-center justify-center touch-none"
                          style={{ transform: `rotate(${rotation}deg)` }}>
-                        {/* Enlarged indicator tick */}
                         <div className="w-2 h-6 bg-fuchsia-500 rounded-full absolute top-1 shadow-[0_0_8px_#d946ef]"></div>
                         <div className="w-8 h-8 rounded-full bg-cyan-950 border border-cyan-800"></div>
                     </div>
-                    {/* Updated Label Name */}
                     <div className="text-[10px] text-cyan-600 mt-2 font-bold tracking-widest uppercase">Temporal Tuner</div>
                 </div>
             );
@@ -183,18 +194,11 @@
         function App() {
             const [timeStr, setTimeStr] = useState("SYNCING...");
             const [msStr, setMsStr] = useState("000");
-            
-            // Fictional Signal Monitor strength state (fluctuates dynamically)
             const [signalStrength, setSignalStrength] = useState(5);
             
             const [floatIndex, setFloatIndexState] = useState(5); 
             const floatIndexRef = useRef(5); 
-            
-            const setFloatIndex = (val) => {
-                floatIndexRef.current = val;
-                setFloatIndexState(val);
-            };
-
+            const setFloatIndex = (val) => { floatIndexRef.current = val; setFloatIndexState(val); };
             const animFrameRef = useRef(null);
             
             const [activeTab, setActiveTab] = useState("calibrate");
@@ -204,7 +208,9 @@
             
             const [causality, setCausality] = useState(false);
             const [emergency, setEmergency] = useState(false);
+            
             const [paradoxLevel, setParadoxLevel] = useState(0); 
+            const [paradoxType, setParadoxType] = useState(1); 
 
             useEffect(() => {
                 const timer = setInterval(() => {
@@ -216,27 +222,24 @@
             }, []);
 
             useEffect(() => {
-                if (jumpState === "jumping" || emergency || paradoxLevel > 80) return;
+                if (jumpState === "jumping" || emergency || paradoxLevel > 0) return;
                 const msgs = ["RE-ROUTING POWER...", "CHECKING ANCHORS...", "SYNCING LATTICE...", "SYSTEM NOMINAL..."];
                 const interval = setInterval(() => setStatus(msgs[Math.floor(Math.random() * msgs.length)]), 3500);
                 return () => clearInterval(interval);
             }, [jumpState, emergency, paradoxLevel]);
 
-            // Signal strength smooth fluctuation logic
             useEffect(() => {
                 const interval = setInterval(() => {
+                    if (paradoxLevel > 0) return; 
                     setSignalStrength(prev => {
                         const roll = Math.random();
-                        if (roll < 0.35) {
-                            return Math.max(2, prev - 1);
-                        } else if (roll < 0.70) {
-                            return Math.min(6, prev + 1);
-                        }
+                        if (roll < 0.35) return Math.max(2, prev - 1);
+                        else if (roll < 0.70) return Math.min(6, prev + 1);
                         return prev;
                     });
                 }, 1200);
                 return () => clearInterval(interval);
-            }, []);
+            }, [paradoxLevel]);
 
             const animateToFloatIndex = (targetValue) => {
                 if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
@@ -253,16 +256,10 @@
                     const progress = timestamp - startTime;
                     let percent = progress / duration;
                     if (percent >= 1) percent = 1;
-
                     const ease = percent < 0.5 ? 4 * percent * percent * percent : 1 - Math.pow(-2 * percent + 2, 3) / 2;
-
                     setFloatIndex(startValue + distance * ease);
-
-                    if (percent < 1) {
-                        animFrameRef.current = requestAnimationFrame(step);
-                    } else {
-                        animFrameRef.current = null;
-                    }
+                    if (percent < 1) animFrameRef.current = requestAnimationFrame(step);
+                    else animFrameRef.current = null;
                 };
 
                 animFrameRef.current = requestAnimationFrame(step);
@@ -277,22 +274,44 @@
 
             const handleFidget = () => {
                 if (paradoxLevel > 0) {
-                    setParadoxLevel(prev => Math.max(0, prev - 20));
-                    if (paradoxLevel <= 20) setStatus("PARADOX AVERTED. REALITY STABILIZED.");
+                    setParadoxLevel(prev => {
+                        const next = Math.max(0, prev - 10); 
+                        if (next === 0) {
+                            setStatus("PARADOX AVERTED. REALITY STABILIZED.");
+                        } else {
+                            setStatus(`COMPENSATING... ANOMALY AT ${next}%`);
+                        }
+                        return next;
+                    });
                 }
             };
 
+            const triggerParadox = (e) => {
+                if (e) e.preventDefault();
+                setParadoxType(Math.random() < 0.5 ? 1 : 2); 
+                setParadoxLevel(100);
+                setStatus("CRITICAL: PARADOX DETECTED!");
+            };
+
+            const handleTabSwitch = (t) => {
+                setActiveTab(t);
+                handleFidget();
+            };
+
             const toggleCausality = () => {
-                setCausality(true); setStatus("ERR: CAUSALITY OVERRIDE DENIED");
+                handleFidget();
+                setCausality(true); 
+                if (paradoxLevel === 0) setStatus("ERR: CAUSALITY OVERRIDE DENIED");
                 setTimeout(() => setCausality(false), 500);
             };
 
             const triggerEmergency = () => {
+                handleFidget();
+                if (paradoxLevel > 0) return; 
                 setEmergency(true); setStatus("TIMELINE SEVERED.");
                 setTimeout(() => setEmergency(false), 4000);
             };
 
-            // Hold-to-Jump Logic
             const scanTimer = useRef(null);
             const jumpStateRef = useRef(jumpState);
             useEffect(() => { jumpStateRef.current = jumpState; }, [jumpState]);
@@ -300,25 +319,18 @@
             const startScan = (e) => {
                 e.preventDefault();
                 if (jumpStateRef.current !== "locked") return;
-                
-                setJumpState("scanning"); 
-                setStatus("CALIBRATING OPERATOR DNA...");
-                
+                setJumpState("scanning"); setStatus("CALIBRATING OPERATOR DNA...");
                 if (scanTimer.current) clearTimeout(scanTimer.current);
-                
                 scanTimer.current = setTimeout(() => {
-                    setJumpState("ready"); 
-                    setStatus("DNA VERIFIED. JUMP AUTHORIZED.");
+                    setJumpState("ready"); setStatus("DNA VERIFIED. JUMP AUTHORIZED.");
                 }, 1500);
             };
             
             const cancelScan = (e) => {
                 if (e) e.preventDefault();
                 if (scanTimer.current) clearTimeout(scanTimer.current);
-                
                 if (jumpStateRef.current === "scanning") {
-                    setJumpState("locked"); 
-                    setStatus("SCAN ABORTED. HOLD STEADY.");
+                    setJumpState("locked"); setStatus("SCAN ABORTED. HOLD STEADY.");
                 }
             };
 
@@ -341,7 +353,6 @@
                 }
             };
 
-            // --- Interpolation Math ---
             const clampedFloat = Math.max(0, Math.min(DESTINATIONS.length - 1, floatIndex));
             const lowerIndex = Math.floor(clampedFloat);
             const upperIndex = Math.ceil(clampedFloat);
@@ -350,11 +361,12 @@
             const year1 = DESTINATIONS[lowerIndex].year;
             const year2 = DESTINATIONS[upperIndex].year;
             const interpolatedYear = Math.round(year1 + fraction * (year2 - year1));
-            
             const nearestIntIndex = Math.round(clampedFloat);
-            const isAnomaly = Math.abs(clampedFloat - nearestIntIndex) > 0.05; 
+            const isDialAnomaly = Math.abs(clampedFloat - nearestIntIndex) > 0.05; 
             
-            const displayDest = isAnomaly ? {
+            const bleedActive = paradoxLevel > 0 && paradoxType === 2;
+
+            const baseDest = isDialAnomaly ? {
                 year: interpolatedYear,
                 name: generateJumble(interpolatedYear, 12),
                 location: generateJumble(interpolatedYear + 3, 14),
@@ -362,199 +374,186 @@
                 isAnomaly: true
             } : DESTINATIONS[nearestIntIndex];
 
-            const doubleNews = (displayDest.news.join(" ✦ ") + " ✦ ").repeat(2);
+            const displayTime = bleedActive ? generateJumble(Date.now(), 8) : timeStr;
+            const displayMs = bleedActive ? generateJumble(Date.now(), 3) : msStr;
+            const displayYear = bleedActive ? generateJumble(Date.now(), 4) : baseDest.year;
+            const displayName = bleedActive ? generateJumble(Date.now() + 1, 15) : baseDest.name;
+            const displayLoc = bleedActive ? generateJumble(Date.now() + 2, 20) : baseDest.location;
+            const doubleNews = bleedActive 
+                ? generateJumble(Date.now(), 80) + " ✦ " + generateJumble(Date.now() + 1, 80)
+                : (baseDest.news.join(" ✦ ") + " ✦ ").repeat(2);
+
+            const wrapperClasses = `h-full flex flex-col gap-2 relative z-10 ${paradoxLevel > 0 && paradoxType === 1 ? 'animate-subtle-shake' : ''}`;
 
             return (
-                <div className="h-full flex flex-col gap-2 relative">
+                <div className="w-full h-full relative">
+                    {}
                     {jumpState === "jumping" && <div className="absolute inset-0 glitch-bg z-50"></div>}
                     {emergency && <div className="absolute inset-0 bg-red-600/30 animate-pulse z-50 mix-blend-color-burn flex items-center justify-center"><h1 className="text-4xl text-red-500 font-black crt-flicker border-y-4 border-red-500 bg-black/80 w-full text-center py-4">TIMELINE SEVERED</h1></div>}
-
-                    <div className="absolute right-0 top-0 bottom-0 w-1 bg-neutral-900 rounded-full opacity-50 z-0">
-                        <div className={`w-full absolute bottom-0 transition-all duration-300 ${paradoxLevel > 50 ? 'bg-red-500 animate-pulse' : 'bg-cyan-600'}`} style={{height: `${paradoxLevel}%`}}></div>
-                    </div>
-
-                    {/* 1. HEADER (Signal Monitor added) */}
-                    <div className="border border-cyan-900 bg-cyan-950/30 p-2 rounded flex justify-between items-center shrink-0">
-                        <div className="font-bold tracking-widest flex items-center gap-2 cursor-pointer" onContextMenu={(e) => e.preventDefault()} onPointerDown={(e) => { e.preventDefault(); setParadoxLevel(100); setStatus("CRITICAL: PARADOX DETECTED!"); }}>
-                            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-ping"></div>
-                            CHRONOS_OS <span className="text-[10px] text-cyan-700">v9.4</span>
-                        </div>
-                        {/* 6-Bar Signal Monitor with fluctuate effects */}
-                        <div className="flex items-end gap-1 h-5 px-1">
-                            {[1, 2, 3, 4, 5, 6].map(barIndex => {
-                                const isHighlighted = barIndex <= signalStrength;
-                                return (
-                                    <div 
-                                        key={barIndex} 
-                                        className="w-1 transition-all duration-300 rounded-t-sm" 
-                                        style={{
-                                            height: `${(barIndex / 6) * 100}%`,
-                                            backgroundColor: isHighlighted ? '#22d3ee' : '#083344',
-                                            boxShadow: isHighlighted ? '0 0 6px #06b6d4' : 'none'
-                                        }}
-                                    />
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* 2. PRESENT (Anchor set to 'The Interstice Resort') */}
-                    <div className="border border-cyan-800 bg-neutral-900/80 p-2 rounded shrink-0">
-                        <div className="text-[9px] text-cyan-600 mb-0.5">LOCAL SIDEREAL TIME</div>
-                        <div className="flex items-end justify-between">
-                            <div className="text-2xl font-black">{timeStr}<span className="text-xs text-cyan-600">.{msStr}</span></div>
-                            <div className="text-[10px] text-right text-cyan-500 max-w-[170px] leading-tight truncate">ANCHOR: The Interstice Resort</div>
-                        </div>
-                    </div>
-
-                    {/* 3. DESTINATION */}
-                    <div className={`border rounded flex flex-col shrink-0 transition-colors ${displayDest.isAnomaly ? 'border-red-900/60 bg-red-950/20' : 'border-fuchsia-900/60 bg-neutral-900/80'}`}>
-                        <div className={`p-3 border-b flex items-center justify-between ${displayDest.isAnomaly ? 'border-red-900/40' : 'border-fuchsia-900/40'}`}>
-                            
-                            {/* Left Column (50% Width): Double-sized Knob */}
-                            <CyberKnob 
-                                floatIndex={floatIndex} 
-                                maxIndex={DESTINATIONS.length - 1} 
-                                onChange={setFloatIndex}
-                                onDragStart={handleDragStart}
-                                onSnap={animateToFloatIndex}
-                            />
-                            
-                            {/* Right Column (50% Width): Stacked Information components */}
-                            <div className={`w-1/2 flex flex-col justify-between border-l pl-4 min-h-[140px] ${displayDest.isAnomaly ? 'border-red-900/30' : 'border-fuchsia-900/30'}`}>
-                                
-                                {/* - "Temporal Target" label */}
-                                <div className={`text-[10px] font-bold tracking-widest uppercase ${displayDest.isAnomaly ? 'text-red-500' : 'text-fuchsia-500'}`}>
-                                    Temporal Target
-                                </div>
-                                
-                                {/* - Preset destination drop-down menu/selector */}
-                                <div className="relative my-1">
-                                    <select 
-                                        className={`appearance-none border text-[11px] px-2 py-1 w-full rounded outline-none cursor-pointer pr-6 ${displayDest.isAnomaly ? 'bg-red-950 border-red-700 text-red-300' : 'bg-fuchsia-950 border-fuchsia-700 text-fuchsia-300'}`}
-                                        value={isAnomaly ? "" : nearestIntIndex} 
-                                        onChange={(e) => animateToFloatIndex(parseInt(e.target.value))}
-                                    >
-                                        <option value="" disabled>{isAnomaly ? "[ LOST SIGNAL ]" : "HISTORY LOG"}</option>
-                                        {DESTINATIONS.map((d, i) => <option key={i} value={i}>{d.year} - {d.location}</option>)}
-                                    </select>
-                                    <div className={`pointer-events-none absolute inset-y-0 right-1.5 flex items-center px-1 text-xs ${displayDest.isAnomaly ? 'text-red-500' : 'text-fuchsia-500'}`}>▼</div>
-                                </div>
-                                
-                                {/* - Selected destination year */}
-                                <div className={`text-4xl sm:text-5xl font-black ${displayDest.isAnomaly ? 'text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.5)]' : 'text-fuchsia-400 drop-shadow-[0_0_8px_rgba(217,70,239,0.5)]'}`}>
-                                    {displayDest.year}
-                                </div>
-                                
-                                {/* - Selected destination name & location label */}
-                                <div className={`text-[11px] font-bold tracking-wider truncate flex flex-col ${displayDest.isAnomaly ? 'text-red-300' : 'text-fuchsia-300'}`}>
-                                    <span className="truncate">{displayDest.name}</span>
-                                    <span className="text-[9px] opacity-80 truncate">✦ {displayDest.location}</span>
-                                </div>
+                    
+                    {paradoxLevel > 0 && paradoxType === 1 && <div className="absolute inset-0 z-0 pointer-events-none vignette-pulse"></div>}
+                    {paradoxLevel > 0 && paradoxType === 2 && (
+                        <div className="absolute inset-0 z-50 pointer-events-none flex items-center justify-center bg-black/50 backdrop-blur-[2px]">
+                            <div className="text-red-500 font-black text-6xl crt-flicker chromatic-aberration mix-blend-screen drop-shadow-[0_0_20px_rgba(255,0,0,1)] flex flex-col items-center">
+                                <span className="text-xl tracking-widest text-white mb-2">TIMELINE BLEED</span>
+                                {paradoxLevel}%
                             </div>
                         </div>
-                        {/* News Ticker: Doubled font size and 50% faster scrolling */}
-                        <div className={`text-base sm:text-lg font-bold p-2.5 overflow-hidden shrink-0 ${displayDest.isAnomaly ? 'bg-red-950/50 text-red-400' : 'bg-black text-amber-500'}`}>
-                            <div className="marquee-content">{doubleNews}</div>
-                        </div>
-                    </div>
+                    )}
 
-                    {/* 4. JUMP BUTTON (Cleaned and scaled to span full horizontal width with larger text) */}
-                    <div className="border border-fuchsia-800 bg-black rounded p-2 relative overflow-hidden shrink-0 h-[70px] flex items-center justify-center">
-                        {jumpState === "locked" && (
-                            <div className="w-full h-full flex items-center justify-center text-fuchsia-500 hover:text-fuchsia-400 active:text-fuchsia-300 cursor-pointer text-center px-4" 
-                                 onPointerDown={startScan} 
-                                 onPointerUp={cancelScan} 
-                                 onPointerLeave={cancelScan}
-                                 onPointerCancel={cancelScan}>
-                                <div className="text-sm sm:text-base tracking-[0.2em] font-black uppercase animate-pulse">
-                                    HOLD TO INITIATE TEMPORAL JUMP
+                    <div className={wrapperClasses}>
+                        
+                        {paradoxLevel > 0 && paradoxType === 1 && (
+                            <div className="absolute inset-x-0 top-1/4 z-50 pointer-events-none flex justify-center shadow-2xl">
+                                <div className="bg-red-950 border-y-4 border-red-500 text-red-100 font-black text-2xl text-center py-4 px-2 w-full animate-pulse crt-flicker">
+                                    PARADOX IMMINENT:<br/><span className="text-lg">STABILIZE CORE</span>
                                 </div>
                             </div>
                         )}
-                        {jumpState === "scanning" && (
-                            <div className="w-full h-full flex items-center justify-center text-cyan-400 crt-flicker text-center px-4"
-                                 onPointerUp={cancelScan} 
-                                 onPointerLeave={cancelScan}
-                                 onPointerCancel={cancelScan}>
-                                <div className="text-sm sm:text-base tracking-[0.2em] font-black uppercase">
-                                    SCANNING BIOMETRIC SIGNATURE...
-                                </div>
+
+                        {}
+                        <div className="border border-cyan-900 bg-cyan-950/30 p-2 rounded flex justify-between items-center shrink-0 relative z-20">
+                            <div className="font-bold tracking-widest flex items-center gap-2 cursor-pointer" onContextMenu={(e) => e.preventDefault()} onPointerDown={triggerParadox}>
+                                <div className={`w-2 h-2 rounded-full ${paradoxLevel > 0 ? 'bg-red-500 animate-ping' : 'bg-cyan-400 animate-ping'}`}></div>
+                                CHRONOS_OS <span className="text-[10px] text-cyan-700">v9.4</span>
                             </div>
-                        )}
-                        {jumpState === "ready" && (
-                            <div className="w-full px-2">
-                                <div className="text-[10px] text-fuchsia-500 mb-1 text-center font-bold tracking-widest">SWIPE TO CONFIRM</div>
-                                <div className="relative bg-neutral-900 rounded-full h-8 border border-fuchsia-900 overflow-hidden shadow-[inset_0_0_10px_rgba(0,0,0,0.8)]">
-                                    {/* Filled bar progress (Tracks exactly 1:1 using percentage) */}
-                                    <div className="absolute left-0 top-0 bottom-0 bg-fuchsia-600/40 pointer-events-none" style={{width: `${swipeValue}%`, transition: swipeValue == 0 ? 'width 0.3s' : 'none'}}></div>
-                                    <input type="range" min="0" max="100" value={swipeValue} onChange={handleSwipeChange} onTouchEnd={handleSwipeEnd} onMouseUp={handleSwipeEnd} className="absolute inset-0 w-full h-full opacity-0 z-20 cursor-ew-resize" />
-                                    {/* Handle button element (Perfect relative mapping with clean borders to eliminate lagging and viewport discrepancies) */}
-                                    <div className="absolute top-0.5 bottom-0.5 w-12 bg-fuchsia-500 rounded-full flex items-center justify-center shadow-[0_0_10px_#d946ef] pointer-events-none text-black font-black" 
-                                         style={{
-                                             left: `calc(4px + (${swipeValue} * (100% - 56px) / 100))`,
-                                             transition: swipeValue == 0 ? 'left 0.3s' : 'none'
-                                         }}>
-                                         »
+                            <div className={`flex items-end gap-1 h-5 px-1 ${bleedActive ? 'chromatic-aberration' : ''}`}>
+                                {[1, 2, 3, 4, 5, 6].map(barIndex => {
+                                    const isHighlighted = barIndex <= (paradoxLevel > 0 ? 6 : signalStrength); 
+                                    const color = paradoxLevel > 0 ? '#ef4444' : '#22d3ee';
+                                    const dimColor = paradoxLevel > 0 ? '#450a0a' : '#083344';
+                                    return (
+                                        <div key={barIndex} className="w-1 transition-all duration-300 rounded-t-sm" 
+                                            style={{ height: `${(barIndex / 6) * 100}%`, backgroundColor: isHighlighted ? color : dimColor, boxShadow: isHighlighted ? `0 0 6px ${color}` : 'none' }} />
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {}
+                        <div className={`border bg-neutral-900/80 p-2 rounded shrink-0 relative z-20 ${paradoxLevel > 0 ? 'border-red-900' : 'border-cyan-800'}`}>
+                            <div className={`text-[9px] mb-0.5 ${paradoxLevel > 0 ? 'text-red-500' : 'text-cyan-600'}`}>LOCAL SIDEREAL TIME</div>
+                            <div className="flex items-end justify-between">
+                                <div className={`text-2xl font-black ${bleedActive ? 'chromatic-aberration text-red-500' : ''}`}>
+                                    {displayTime}<span className={`text-xs ${bleedActive ? '' : 'text-cyan-600'}`}>.{displayMs}</span>
+                                </div>
+                                <div className={`text-[10px] text-right max-w-[170px] leading-tight truncate ${paradoxLevel > 0 ? 'text-red-400' : 'text-cyan-500'}`}>ANCHOR: The Interstice Resort</div>
+                            </div>
+                        </div>
+
+                        {}
+                        <div className={`border rounded flex flex-col shrink-0 transition-colors relative z-20 ${bleedActive || baseDest.isAnomaly ? 'border-red-900/60 bg-red-950/20' : 'border-fuchsia-900/60 bg-neutral-900/80'}`}>
+                            <div className={`p-3 border-b flex items-center justify-between ${bleedActive || baseDest.isAnomaly ? 'border-red-900/40' : 'border-fuchsia-900/40'}`}>
+                                
+                                <CyberKnob floatIndex={floatIndex} maxIndex={DESTINATIONS.length - 1} onChange={setFloatIndex} onDragStart={handleDragStart} onSnap={animateToFloatIndex} />
+                                
+                                <div className={`w-1/2 flex flex-col justify-between border-l pl-4 min-h-[140px] ${bleedActive || baseDest.isAnomaly ? 'border-red-900/30' : 'border-fuchsia-900/30'}`}>
+                                    <div className={`text-[10px] font-bold tracking-widest uppercase ${bleedActive || baseDest.isAnomaly ? 'text-red-500' : 'text-fuchsia-500'}`}>Temporal Target</div>
+                                    
+                                    <div className="relative my-1">
+                                        <select 
+                                            className={`appearance-none border text-[11px] px-2 py-1 w-full rounded outline-none cursor-pointer pr-6 ${bleedActive || baseDest.isAnomaly ? 'bg-red-950 border-red-700 text-red-300' : 'bg-fuchsia-950 border-fuchsia-700 text-fuchsia-300'}`}
+                                            value={baseDest.isAnomaly || bleedActive ? "" : nearestIntIndex} 
+                                            onChange={(e) => animateToFloatIndex(parseInt(e.target.value))}
+                                            disabled={bleedActive}
+                                        >
+                                            <option value="" disabled>{bleedActive || baseDest.isAnomaly ? "[ LOST SIGNAL ]" : "HISTORY LOG"}</option>
+                                            {DESTINATIONS.map((d, i) => <option key={i} value={i}>{d.year} - {d.location}</option>)}
+                                        </select>
+                                        <div className={`pointer-events-none absolute inset-y-0 right-1.5 flex items-center px-1 text-xs ${bleedActive || baseDest.isAnomaly ? 'text-red-500' : 'text-fuchsia-500'}`}>▼</div>
+                                    </div>
+                                    
+                                    <div className={`text-4xl sm:text-5xl font-black ${bleedActive ? 'chromatic-aberration text-red-500' : baseDest.isAnomaly ? 'text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.5)]' : 'text-fuchsia-400 drop-shadow-[0_0_8px_rgba(217,70,239,0.5)]'}`}>
+                                        {displayYear}
+                                    </div>
+                                    
+                                    <div className={`text-[11px] font-bold tracking-wider truncate flex flex-col ${bleedActive || baseDest.isAnomaly ? 'text-red-300' : 'text-fuchsia-300'}`}>
+                                        <span className={`truncate ${bleedActive ? 'chromatic-aberration' : ''}`}>{displayName}</span>
+                                        <span className={`text-[9px] opacity-80 truncate ${bleedActive ? 'chromatic-aberration' : ''}`}>✦ {displayLoc}</span>
                                     </div>
                                 </div>
                             </div>
-                        )}
-                        {jumpState === "jumping" && (
-                            <div className="text-white font-black text-xl tracking-[0.3em] crt-flicker">TRANSLATING</div>
-                        )}
-                    </div>
-
-                    {/* 5. FIDGET TABS */}
-                    <div className="border border-neutral-800 bg-neutral-900/50 rounded flex flex-col flex-1 min-h-[140px]">
-                        <div className="flex border-b border-neutral-800 text-[10px] shrink-0">
-                            {['calibrate', 'shields', 'diag'].map(t => (
-                                <button key={t} onClick={() => setActiveTab(t)} className={`flex-1 p-2 uppercase tracking-wider font-bold ${activeTab === t ? 'bg-cyan-900/40 text-cyan-300 border-b-2 border-cyan-500' : 'text-neutral-600'}`}>
-                                    {t}
-                                </button>
-                            ))}
+                            <div className={`text-base sm:text-lg font-bold p-2.5 overflow-hidden shrink-0 ${bleedActive || baseDest.isAnomaly ? 'bg-red-950/50 text-red-400' : 'bg-black text-amber-500'}`}>
+                                <div className={`marquee-content ${bleedActive ? 'chromatic-aberration' : ''}`}>{doubleNews}</div>
+                            </div>
                         </div>
-                        <div className="p-3 flex-1 flex flex-col justify-center gap-4 overflow-y-auto">
-                            {activeTab === 'calibrate' && (
-                                <>
-                                    <div>
-                                        <div className="text-[10px] text-cyan-700 mb-2">TIME DILATION</div>
-                                        <input type="range" min="1" max="100" defaultValue="50" onChange={handleFidget} className="w-full fidget-slider" />
+
+                        {}
+                        <div className={`border bg-black rounded p-2 relative overflow-hidden shrink-0 h-[70px] flex items-center justify-center relative z-20 ${paradoxLevel > 0 ? 'border-red-900' : 'border-fuchsia-800'}`}>
+                            {jumpState === "locked" && (
+                                <div className={`w-full h-full flex items-center justify-center cursor-pointer text-center px-4 ${paradoxLevel > 0 ? 'text-red-600' : 'text-fuchsia-500 hover:text-fuchsia-400'}`} 
+                                     onPointerDown={startScan} onPointerUp={cancelScan} onPointerLeave={cancelScan} onPointerCancel={cancelScan}>
+                                    <div className="text-sm sm:text-base tracking-[0.2em] font-black uppercase animate-pulse">
+                                        {paradoxLevel > 0 ? 'JUMP DRIVE LOCKED' : 'HOLD TO INITIATE TEMPORAL JUMP'}
                                     </div>
-                                    <div>
-                                        <div className="text-[10px] text-cyan-700 mb-2">FLUX INTERVAL</div>
-                                        <input type="range" min="1" max="10" defaultValue="5" onChange={handleFidget} className="w-full fidget-slider accent-fuchsia-500" />
-                                    </div>
-                                </>
-                            )}
-                            {activeTab === 'shields' && (
-                                <div className="flex flex-col gap-3">
-                                    <button onClick={handleFidget} className="border border-cyan-800 p-3 rounded text-sm font-bold active:bg-cyan-900 transition-colors flex justify-between items-center shadow-[inset_0_0_10px_rgba(6,182,212,0.1)]">
-                                        QUANTUM SLICE <span className="bg-cyan-950 px-2 py-0.5 rounded text-[10px]">TOGGLE</span>
-                                    </button>
-                                    <button onClick={toggleCausality} className={`border p-3 rounded text-sm font-bold transition-all flex justify-between items-center shadow-[inset_0_0_10px_rgba(0,0,0,0.5)] ${causality ? 'bg-red-900 border-red-500 text-red-100' : 'border-cyan-800 active:bg-cyan-900'}`}>
-                                        CAUSALITY GUARD <span className="bg-black px-2 py-0.5 rounded text-[10px]">{causality ? 'ERR' : 'OFF'}</span>
-                                    </button>
                                 </div>
                             )}
-                            {activeTab === 'diag' && (
-                                <div className="flex justify-center items-center h-full pb-2">
-                                    <button onClick={triggerEmergency} className="w-24 h-24 rounded-full border-4 border-red-900 bg-red-950/50 text-red-500 text-[12px] font-black flex flex-col items-center justify-center gap-1 active:bg-red-600 active:text-white shadow-[0_0_20px_rgba(220,38,38,0.3)]">
-                                        <IconAlert /> RECALL
-                                    </button>
+                            {jumpState === "scanning" && (
+                                <div className="w-full h-full flex items-center justify-center text-cyan-400 crt-flicker text-center px-4" onPointerUp={cancelScan} onPointerLeave={cancelScan} onPointerCancel={cancelScan}>
+                                    <div className="text-sm sm:text-base tracking-[0.2em] font-black uppercase">SCANNING BIOMETRIC SIGNATURE...</div>
                                 </div>
                             )}
+                            {jumpState === "ready" && (
+                                <div className="w-full px-2">
+                                    <div className="text-[10px] text-fuchsia-500 mb-1 text-center font-bold tracking-widest">SWIPE TO CONFIRM</div>
+                                    <div className="relative bg-neutral-900 rounded-full h-8 border border-fuchsia-900 overflow-hidden shadow-[inset_0_0_10px_rgba(0,0,0,0.8)]">
+                                        <div className="absolute left-0 top-0 bottom-0 bg-fuchsia-600/40 pointer-events-none" style={{width: `${swipeValue}%`, transition: swipeValue == 0 ? 'width 0.3s' : 'none'}}></div>
+                                        <input type="range" min="0" max="100" value={swipeValue} onChange={handleSwipeChange} onTouchEnd={handleSwipeEnd} onMouseUp={handleSwipeEnd} className="absolute inset-0 w-full h-full opacity-0 z-20 cursor-ew-resize" />
+                                        <div className="absolute top-0.5 bottom-0.5 w-12 bg-fuchsia-500 rounded-full flex items-center justify-center shadow-[0_0_10px_#d946ef] pointer-events-none text-black font-black" style={{ left: `calc(4px + (${swipeValue} * (100% - 56px) / 100))`, transition: swipeValue == 0 ? 'left 0.3s' : 'none' }}>»</div>
+                                    </div>
+                                </div>
+                            )}
+                            {jumpState === "jumping" && <div className="text-white font-black text-xl tracking-[0.3em] crt-flicker">TRANSLATING</div>}
                         </div>
-                    </div>
 
-                    {/* 6. STATUS BAR (Flashes active when status key/text updates) */}
-                    <div 
-                        key={status} 
-                        className="bg-black border border-cyan-900 p-2 rounded flex items-center gap-2 shrink-0 h-10 shadow-[inset_0_0_10px_rgba(6,182,212,0.1)] animate-status-flash"
-                    >
-                        <div className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse shrink-0"></div>
-                        <div className={`text-[10px] font-mono truncate w-full ${status.includes("ERR") || status.includes("CRITICAL") ? 'text-red-500 crt-flicker font-bold' : 'text-cyan-600'}`}>
-                            {status}
+                        {}
+                        <div className={`border bg-neutral-900/50 rounded flex flex-col flex-1 min-h-[140px] relative z-20 ${paradoxLevel > 0 ? 'border-red-900' : 'border-neutral-800'}`}>
+                            <div className={`flex border-b text-[10px] shrink-0 ${paradoxLevel > 0 ? 'border-red-900' : 'border-neutral-800'}`}>
+                                {['calibrate', 'shields', 'diag'].map(t => (
+                                    <button key={t} onClick={() => handleTabSwitch(t)} className={`flex-1 p-2 uppercase tracking-wider font-bold ${activeTab === t ? (paradoxLevel > 0 ? 'bg-red-900/40 text-red-300 border-b-2 border-red-500' : 'bg-cyan-900/40 text-cyan-300 border-b-2 border-cyan-500') : (paradoxLevel > 0 ? 'text-red-900' : 'text-neutral-600')}`}>
+                                        {t}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="p-3 flex-1 flex flex-col justify-center gap-4 overflow-y-auto">
+                                {activeTab === 'calibrate' && (
+                                    <>
+                                        <div>
+                                            <div className={`text-[10px] mb-2 ${paradoxLevel > 0 ? 'text-red-500' : 'text-cyan-700'}`}>TIME DILATION</div>
+                                            <input type="range" min="1" max="100" defaultValue="50" onInput={handleFidget} className="w-full fidget-slider" />
+                                        </div>
+                                        <div>
+                                            <div className={`text-[10px] mb-2 ${paradoxLevel > 0 ? 'text-red-500' : 'text-cyan-700'}`}>FLUX INTERVAL</div>
+                                            <input type="range" min="1" max="10" defaultValue="5" onInput={handleFidget} className="w-full fidget-slider accent-fuchsia-500" />
+                                        </div>
+                                    </>
+                                )}
+                                {activeTab === 'shields' && (
+                                    <div className="flex flex-col gap-3">
+                                        <button onClick={handleFidget} className={`border p-3 rounded text-sm font-bold transition-colors flex justify-between items-center shadow-[inset_0_0_10px_rgba(6,182,212,0.1)] ${paradoxLevel > 0 ? 'border-red-800 text-red-500 active:bg-red-900' : 'border-cyan-800 text-cyan-400 active:bg-cyan-900'}`}>
+                                            QUANTUM SLICE <span className={`px-2 py-0.5 rounded text-[10px] ${paradoxLevel > 0 ? 'bg-red-950' : 'bg-cyan-950'}`}>TOGGLE</span>
+                                        </button>
+                                        <button onClick={toggleCausality} className={`border p-3 rounded text-sm font-bold transition-all flex justify-between items-center shadow-[inset_0_0_10px_rgba(0,0,0,0.5)] ${causality ? 'bg-red-900 border-red-500 text-red-100' : (paradoxLevel > 0 ? 'border-red-800 text-red-500 active:bg-red-900' : 'border-cyan-800 text-cyan-400 active:bg-cyan-900')}`}>
+                                            CAUSALITY GUARD <span className="bg-black px-2 py-0.5 rounded text-[10px]">{causality ? 'ERR' : 'OFF'}</span>
+                                        </button>
+                                    </div>
+                                )}
+                                {activeTab === 'diag' && (
+                                    <div className="flex justify-center items-center h-full pb-2">
+                                        <button onClick={triggerEmergency} className="w-24 h-24 rounded-full border-4 border-red-900 bg-red-950/50 text-red-500 text-[12px] font-black flex flex-col items-center justify-center gap-1 active:bg-red-600 active:text-white shadow-[0_0_20px_rgba(220,38,38,0.3)]">
+                                            <IconAlert /> RECALL
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {}
+                        <div key={status} className={`bg-black border p-2 rounded flex items-center gap-2 shrink-0 h-10 shadow-[inset_0_0_10px_rgba(6,182,212,0.1)] animate-status-flash relative z-20 ${paradoxLevel > 0 ? 'border-red-900' : 'border-cyan-900'}`}>
+                            <div className={`w-2 h-2 rounded-full animate-pulse shrink-0 ${paradoxLevel > 0 ? 'bg-red-500' : 'bg-cyan-500'}`}></div>
+                            <div className={`text-[10px] font-mono truncate w-full ${status.includes("ERR") || status.includes("CRITICAL") || paradoxLevel > 0 ? 'text-red-500 crt-flicker font-bold' : 'text-cyan-600'}`}>
+                                {status}
+                            </div>
                         </div>
                     </div>
                 </div>
