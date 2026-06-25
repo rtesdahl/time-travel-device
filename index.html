@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -221,6 +222,7 @@
             const [isWheelDragging, setIsWheelDragging] = useState(false);
             const wheelStartX = useRef(0);
             const wheelStartVal = useRef(5);
+            const [dragFloat, setDragFloat] = useState(5); // Tracks the continuous float value during dragging
 
             // Paradox State
             const [paradoxLevel, setParadoxLevel] = useState(0); 
@@ -336,6 +338,7 @@
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 wheelStartX.current = clientX;
                 wheelStartVal.current = fluxInterval;
+                setDragFloat(fluxInterval);
             };
 
             useEffect(() => {
@@ -344,12 +347,15 @@
                     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                     const deltaX = clientX - wheelStartX.current;
                     
-                    // Drag mapping: every 15px of motion changes the step selection
-                    // Changing to negative stepDiff subtraction makes dragging pull the wheel naturally
-                    const stepDiff = Math.round(deltaX / 15);
-                    let newVal = wheelStartVal.current - stepDiff;
-                    if (newVal < 1) newVal = 1;
-                    if (newVal > 10) newVal = 10;
+                    // Maps exact pixel translation (48px per integer step)
+                    let newFloat = wheelStartVal.current - (deltaX / 48);
+                    
+                    // Clamp to allow slight visual overscroll before absolute stop
+                    newFloat = Math.max(0.5, Math.min(10.5, newFloat));
+                    setDragFloat(newFloat);
+                    
+                    let newVal = Math.round(newFloat);
+                    newVal = Math.max(1, Math.min(10, newVal));
                     
                     if (newVal !== fluxInterval) {
                         setFluxInterval(newVal);
@@ -473,6 +479,9 @@
                 : (baseDest.news.join(" ✦ ") + " ✦ ").repeat(2);
 
             const wrapperClasses = `h-full flex flex-col gap-2 relative z-10 ${paradoxLevel > 0 && paradoxType === 1 ? 'animate-subtle-shake' : ''}`;
+
+            // Smooth visual transition variable selection
+            const displayFlux = isWheelDragging ? dragFloat : fluxInterval;
 
             return (
                 <div className="w-full h-full relative animate-crt-flicker">
@@ -645,10 +654,9 @@
                                                 }`}
                                             >
                                                 {/* Scrolling index labels and markers */}
-                                                {/* Formula updated dynamically to align exactly centered based on (fluxInterval - 5.5) * -48px spacing */}
                                                 <div 
                                                     className={`absolute flex items-center justify-center gap-4 ${isWheelDragging ? 'transition-none' : 'transition-transform duration-300 ease-out'}`}
-                                                    style={{ transform: `translateX(${(fluxInterval - 5.5) * -48}px)` }}
+                                                    style={{ transform: `translateX(${(displayFlux - 5.5) * -48}px)` }}
                                                 >
                                                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((tickVal) => {
                                                         const isSelected = tickVal === fluxInterval;
