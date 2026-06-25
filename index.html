@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -42,18 +43,15 @@
         .crt-flicker { animation: flicker 0.15s infinite; }
         @keyframes flicker { 0% { opacity: 0.9; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
 
-        /* Ticker: 50% Faster Speed */
         @keyframes marquee { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-50%, 0, 0); } }
         .marquee-content { display: inline-block; white-space: nowrap; animation: marquee 13s linear infinite; }
 
-        /* Reactive Status Indicator Flash */
         @keyframes status-pulse {
             0% { background-color: rgba(6, 182, 212, 0.5); box-shadow: inset 0 0 15px rgba(6, 182, 212, 0.3); }
             100% { background-color: rgba(0, 0, 0, 1); box-shadow: none; }
         }
         .animate-status-flash { animation: status-pulse 0.25s linear 1; }
 
-        /* PARADOX EFFECTS */
         @keyframes subtle-shake {
             0%, 100% { transform: translate(0, 0) rotate(0deg); }
             20% { transform: translate(-1px, 1.5px) rotate(-0.5deg); }
@@ -71,6 +69,14 @@
             box-shadow: inset 0 0 15vh 2vw rgba(220, 38, 38, 0.7);
             animation: flicker 0.2s infinite;
         }
+
+        /* Full Screen Translation Flash */
+        @keyframes temporal-flash {
+            0% { background-color: rgba(34, 211, 238, 0); }
+            10% { background-color: rgba(34, 211, 238, 1); }
+            100% { background-color: rgba(34, 211, 238, 0); }
+        }
+        .animate-temporal-flash { animation: temporal-flash 1.1s ease-out forwards; pointer-events: none; }
     </style>
 </head>
 <body class="text-cyan-400 font-mono h-[100dvh] w-screen overflow-hidden touch-none select-none scanlines flex flex-col">
@@ -199,6 +205,9 @@
             const [msStr, setMsStr] = useState("000");
             const [signalStrength, setSignalStrength] = useState(5);
             
+            // Current Location Tracking
+            const [currentYear, setCurrentYear] = useState(2026);
+
             const [floatIndex, setFloatIndexState] = useState(5); 
             const floatIndexRef = useRef(5); 
             const setFloatIndex = (val) => { floatIndexRef.current = val; setFloatIndexState(val); };
@@ -208,6 +217,9 @@
             const [jumpState, setJumpState] = useState("locked");
             const [swipeValue, setSwipeValue] = useState(0);
             
+            // Custom Dropdown State
+            const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
             // Re-vamped Fidget Control States
             const SLICE_MODES = ["NONE", "BILATERAL", "INTERLACED", "MULTI-GRID"];
             const [sliceModeIndex, setSliceModeIndex] = useState(0);
@@ -224,6 +236,7 @@
             
             const [showRecallConfirm, setShowRecallConfirm] = useState(false);
             const [emergency, setEmergency] = useState(false);
+            const [isFlashing, setIsFlashing] = useState(false);
             
             const paradoxTimerRef = useRef(null);
 
@@ -256,7 +269,6 @@
                 return () => clearInterval(interval);
             }, [paradoxLevel]);
 
-            // Upgraded animation to accept custom durations (crucial for 4s recall animation)
             const animateToFloatIndex = (targetValue, customDuration = 1200) => {
                 if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
                 
@@ -334,10 +346,9 @@
                 handleFidget(10);
             };
 
-            // Enhanced Emergency Handlers
             const handleRecallPress = () => {
                 handleFidget(10);
-                if (paradoxLevel > 0) return; // If paradox is active, button just acts as a stabilizer, no emergency trigger
+                if (paradoxLevel > 0) return; 
                 setShowRecallConfirm(true);
             };
 
@@ -345,11 +356,19 @@
                 setShowRecallConfirm(false);
                 setEmergency(true); 
                 setStatus("TIMELINE SEVERED. RETURNING TO 2026.");
-                animateToFloatIndex(5, 4000); // 5 is the index of "2026 Present Anchor"
-                setTimeout(() => setEmergency(false), 4000);
+                
+                // Spin back to 2026 (index 5) smoothly over 4 seconds
+                animateToFloatIndex(5, 4000); 
+                
+                // Complete recall sequence
+                setTimeout(() => {
+                    setEmergency(false);
+                    setCurrentYear(2026);
+                    setIsFlashing(true);
+                    setTimeout(() => setIsFlashing(false), 1100);
+                }, 4000);
             };
 
-            // Scroll wheel logic
             const handleWheelDown = (e) => {
                 setIsWheelDragging(true);
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -428,7 +447,26 @@
                         setStatus(seq[step]); step++;
                         if (step >= seq.length) {
                             clearInterval(int);
-                            setTimeout(() => { setJumpState("locked"); setSwipeValue(0); setStatus("SYSTEM NOMINAL."); }, 1500);
+                            
+                            // Calculate exact destination year
+                            const finalFloat = floatIndexRef.current;
+                            const clamped = Math.max(0, Math.min(DESTINATIONS.length - 1, finalFloat));
+                            const lIdx = Math.floor(clamped);
+                            const uIdx = Math.ceil(clamped);
+                            const frac = clamped - lIdx;
+                            const y1 = DESTINATIONS[lIdx].year;
+                            const y2 = DESTINATIONS[uIdx].year;
+                            const interpYear = Math.round(y1 + frac * (y2 - y1));
+                            
+                            setCurrentYear(interpYear);
+                            
+                            // Trigger translation flash
+                            setIsFlashing(true);
+                            setTimeout(() => setIsFlashing(false), 1100);
+
+                            setJumpState("locked"); 
+                            setSwipeValue(0); 
+                            setStatus("SYSTEM NOMINAL.");
                         }
                     }, 800);
                 } else {
@@ -458,6 +496,10 @@
                 isAnomaly: true
             } : DESTINATIONS[nearestIntIndex];
 
+            // Resolve Current Anchor Location Name
+            const resolvedAnchorLoc = DESTINATIONS.find(d => d.year === currentYear);
+            const currentLocName = resolvedAnchorLoc ? resolvedAnchorLoc.location : "UNKNOWN LOCALITY";
+
             const displayTime = bleedActive ? generateJumble(Date.now(), 8) : timeStr;
             const displayMs = bleedActive ? generateJumble(Date.now(), 3) : msStr;
             const displayYear = bleedActive ? generateJumble(Date.now(), 4) : baseDest.year;
@@ -474,9 +516,12 @@
 
             return (
                 <div className="w-full h-full relative animate-crt-flicker flex flex-col justify-between">
+                    
+                    {/* TRANSLATION FLASH OVERLAY */}
+                    {isFlashing && <div className="fixed inset-0 z-[200] animate-temporal-flash pointer-events-none"></div>}
+                    
                     {/* Background Overlays for Effects */}
                     {jumpState === "jumping" && <div className="absolute inset-0 glitch-bg z-[60]"></div>}
-                    
                     {paradoxLevel > 0 && paradoxType === 1 && <div className="absolute inset-0 z-0 pointer-events-none vignette-pulse"></div>}
 
                     {/* MAIN UI WRAPPER */}
@@ -511,14 +556,24 @@
                                 </div>
                             </div>
 
-                            {/* 2. PRESENT */}
+                            {/* 2. PRESENT LOCATION (Upgraded tracking) */}
                             <div className={`border bg-neutral-900/80 p-2 rounded shrink-0 relative z-20 transition-colors duration-300 ${paradoxLevel > 0 ? 'border-red-900' : 'border-cyan-800'}`}>
-                                <div className={`text-[9px] mb-0.5 ${paradoxLevel > 0 ? 'text-red-500' : 'text-cyan-600'}`}>LOCAL SIDEREAL TIME</div>
+                                <div className={`text-[9px] mb-0.5 flex justify-between ${paradoxLevel > 0 ? 'text-red-500' : 'text-cyan-600'}`}>
+                                    <span>LOCAL SIDEREAL TIME</span>
+                                    <span>[ {currentYear === 2026 ? 'ANCHOR SECURED' : 'TEMPORAL DRIFT'} ]</span>
+                                </div>
                                 <div className="flex items-end justify-between">
-                                    <div className={`text-2xl font-black ${bleedActive ? 'chromatic-aberration text-red-500' : ''}`}>
-                                        {displayTime}<span className={`text-xs ${bleedActive ? '' : 'text-cyan-600'}`}>.{displayMs}</span>
+                                    <div className="flex items-baseline gap-2">
+                                        <div className={`text-2xl sm:text-3xl font-black ${bleedActive ? 'chromatic-aberration text-red-500' : 'text-cyan-400'}`}>
+                                            {bleedActive ? generateJumble(Date.now(), 4) : currentYear}
+                                        </div>
+                                        <div className={`text-lg sm:text-xl font-black ${bleedActive ? 'chromatic-aberration text-red-500' : ''}`}>
+                                            {displayTime}<span className={`text-xs ${bleedActive ? '' : 'text-cyan-600'}`}>.{displayMs}</span>
+                                        </div>
                                     </div>
-                                    <div className={`text-[10px] text-right max-w-[170px] leading-tight truncate ${paradoxLevel > 0 ? 'text-red-400' : 'text-cyan-500'}`}>ANCHOR: The Interstice Resort</div>
+                                    <div className={`text-[10px] text-right max-w-[130px] leading-tight truncate ${paradoxLevel > 0 ? 'text-red-400' : 'text-cyan-500'}`}>
+                                        LOC: {currentLocName}
+                                    </div>
                                 </div>
                             </div>
 
@@ -531,17 +586,36 @@
                                     <div className={`w-1/2 flex flex-col justify-between border-l pl-4 min-h-[140px] ${bleedActive || baseDest.isAnomaly ? 'border-red-900/30' : 'border-fuchsia-900/30'}`}>
                                         <div className={`text-[10px] font-bold tracking-widest uppercase ${bleedActive || baseDest.isAnomaly ? 'text-red-500' : 'text-fuchsia-500'}`}>Temporal Target</div>
                                         
-                                        <div className="relative my-1">
-                                            <select 
-                                                className={`appearance-none border text-[11px] px-2 py-1 w-full rounded outline-none cursor-pointer pr-6 ${bleedActive || baseDest.isAnomaly ? 'bg-red-950 border-red-700 text-red-300' : 'bg-fuchsia-950 border-fuchsia-700 text-fuchsia-300'}`}
-                                                value={baseDest.isAnomaly || bleedActive ? "" : nearestIntIndex} 
-                                                onChange={(e) => animateToFloatIndex(parseInt(e.target.value))}
-                                                disabled={bleedActive}
+                                        {/* CUSTOM CYBERPUNK DROPDOWN */}
+                                        <div className="relative my-1 select-none">
+                                            <div 
+                                                className={`border text-[11px] px-2 py-1 w-full rounded cursor-pointer flex justify-between items-center transition-colors ${bleedActive || baseDest.isAnomaly ? 'bg-red-950 border-red-700 text-red-300' : 'bg-fuchsia-950 border-fuchsia-700 text-fuchsia-300'}`}
+                                                onClick={() => { if (!bleedActive) setIsDropdownOpen(!isDropdownOpen); }}
                                             >
-                                                <option value="" disabled>{bleedActive || baseDest.isAnomaly ? "[ LOST SIGNAL ]" : "HISTORY LOG"}</option>
-                                                {DESTINATIONS.map((d, i) => <option key={i} value={i}>{d.year} - {d.location}</option>)}
-                                            </select>
-                                            <div className={`pointer-events-none absolute inset-y-0 right-1.5 flex items-center px-1 text-xs ${bleedActive || baseDest.isAnomaly ? 'text-red-500' : 'text-fuchsia-500'}`}>▼</div>
+                                                <span className="truncate">{bleedActive || baseDest.isAnomaly ? "[ LOST SIGNAL ]" : "HISTORY LOG"}</span>
+                                                <span className="text-[8px]">▼</span>
+                                            </div>
+                                            
+                                            {isDropdownOpen && !bleedActive && (
+                                                <>
+                                                    <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)}></div>
+                                                    <div className="absolute top-full right-0 mt-1 w-[120%] max-h-48 overflow-y-auto bg-neutral-950 border border-fuchsia-700 rounded z-50 shadow-[0_0_20px_rgba(217,70,239,0.3)] divide-y divide-fuchsia-900/50">
+                                                        {DESTINATIONS.map((d, i) => (
+                                                            <div 
+                                                                key={i} 
+                                                                className="text-[10px] px-2 py-2.5 text-fuchsia-300 hover:bg-fuchsia-800 hover:text-white cursor-pointer flex justify-between items-center transition-colors"
+                                                                onClick={() => {
+                                                                    animateToFloatIndex(i);
+                                                                    setIsDropdownOpen(false);
+                                                                }}
+                                                            >
+                                                                <span className="font-bold">{d.year}</span>
+                                                                <span className="opacity-70 truncate max-w-[100px] text-right">{d.location}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
                                         
                                         <div className={`text-4xl sm:text-5xl font-black ${bleedActive ? 'chromatic-aberration text-red-500' : baseDest.isAnomaly ? 'text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.5)]' : 'text-fuchsia-400 drop-shadow-[0_0_8px_rgba(217,70,239,0.5)]'}`}>
