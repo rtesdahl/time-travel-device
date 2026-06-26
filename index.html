@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -77,6 +76,14 @@
             100% { background-color: rgba(34, 211, 238, 0); }
         }
         .animate-temporal-flash { animation: temporal-flash 1.1s ease-out forwards; pointer-events: none; }
+
+        /* Paradox Error Flash (0.25s fade on, 1s fade off) */
+        @keyframes paradox-flash {
+            0% { background-color: rgba(220, 38, 38, 0); }
+            20% { background-color: rgba(220, 38, 38, 0.9); }
+            100% { background-color: rgba(220, 38, 38, 0); }
+        }
+        .animate-paradox-flash { animation: paradox-flash 1.25s ease-out forwards; pointer-events: none; }
     </style>
 </head>
 <body class="text-cyan-400 font-mono h-[100dvh] w-screen overflow-hidden touch-none select-none scanlines flex flex-col">
@@ -237,6 +244,7 @@
             const [showRecallConfirm, setShowRecallConfirm] = useState(false);
             const [emergency, setEmergency] = useState(false);
             const [isFlashing, setIsFlashing] = useState(false);
+            const [isParadoxFlashing, setIsParadoxFlashing] = useState(false);
             
             const paradoxTimerRef = useRef(null);
 
@@ -299,13 +307,19 @@
                 }
             };
 
-            const handleFidget = (amount = 10) => {
+            const handleFidget = (maxAmount = 10) => {
                 if (paradoxLevel > 0) {
+                    // Reduce by a randomized natural amount based on the provided max limit
+                    const amount = Math.floor(Math.random() * maxAmount) + 1; 
+                    
                     setParadoxLevel(prev => {
                         const next = Math.max(0, prev - amount); 
-                        if (next === 0) {
+                        if (next === 0 && prev > 0) {
                             setStatus("PARADOX AVERTED. REALITY STABILIZED.");
-                        } else {
+                            // Flash on cleared paradox
+                            setIsParadoxFlashing(true);
+                            setTimeout(() => setIsParadoxFlashing(false), 1250);
+                        } else if (next > 0 && next !== prev) {
                             setStatus(`COMPENSATING... ANOMALY AT ${next}%`);
                         }
                         return next;
@@ -317,6 +331,10 @@
                 setParadoxType(Math.random() < 0.5 ? 1 : 2); 
                 setParadoxLevel(100);
                 setStatus("CRITICAL: PARADOX DETECTED!");
+                
+                // Flash on triggered paradox
+                setIsParadoxFlashing(true);
+                setTimeout(() => setIsParadoxFlashing(false), 1250);
             };
 
             const handleHeaderPointerDown = (e) => {
@@ -338,16 +356,16 @@
 
             const cycleSlicing = () => {
                 setSliceModeIndex(prev => (prev + 1) % SLICE_MODES.length);
-                handleFidget(10);
+                handleFidget();
             };
 
             const toggleSafety = () => {
                 setSafetyActive(prev => !prev);
-                handleFidget(10);
+                handleFidget();
             };
 
             const handleRecallPress = () => {
-                handleFidget(10);
+                handleFidget();
                 if (paradoxLevel > 0) return; 
                 setShowRecallConfirm(true);
             };
@@ -392,7 +410,7 @@
                     
                     if (newVal !== fluxInterval) {
                         setFluxInterval(newVal);
-                        handleFidget(10);
+                        handleFidget();
                     }
                 };
 
@@ -520,6 +538,9 @@
                     {/* TRANSLATION FLASH OVERLAY */}
                     {isFlashing && <div className="fixed inset-0 z-[200] animate-temporal-flash pointer-events-none"></div>}
                     
+                    {/* PARADOX TRIGGER/CLEAR FLASH OVERLAY */}
+                    {isParadoxFlashing && <div className="fixed inset-0 z-[200] animate-paradox-flash pointer-events-none"></div>}
+
                     {/* Background Overlays for Effects */}
                     {jumpState === "jumping" && <div className="absolute inset-0 glitch-bg z-[60]"></div>}
                     {paradoxLevel > 0 && paradoxType === 1 && <div className="absolute inset-0 z-0 pointer-events-none vignette-pulse"></div>}
@@ -528,7 +549,8 @@
                     <div className={wrapperClasses}>
                         
                         {/* 1, 2, 3: THE TEMPORAL CORE (Contains Header, Present, Destination + Selective Overlay) */}
-                        <div className="relative flex flex-col gap-2 shrink-0 rounded border border-transparent">
+                        {/* Z-30 added here to ensure history dropdown overflows Jump buttons below it */}
+                        <div className="relative flex flex-col gap-2 shrink-0 rounded border border-transparent z-30">
                             
                             {/* 1. HEADER */}
                             <div className="border border-cyan-900 bg-cyan-950/30 p-2 rounded flex justify-between items-center shrink-0 relative z-20">
@@ -556,11 +578,11 @@
                                 </div>
                             </div>
 
-                            {/* 2. PRESENT LOCATION (Upgraded tracking) */}
+                            {/* 2. PRESENT LOCATION */}
                             <div className={`border bg-neutral-900/80 p-2 rounded shrink-0 relative z-20 transition-colors duration-300 ${paradoxLevel > 0 ? 'border-red-900' : 'border-cyan-800'}`}>
-                                <div className={`text-[9px] mb-0.5 flex justify-between ${paradoxLevel > 0 ? 'text-red-500' : 'text-cyan-600'}`}>
-                                    <span>LOCAL SIDEREAL TIME</span>
-                                    <span>[ {currentYear === 2026 ? 'ANCHOR SECURED' : 'TEMPORAL DRIFT'} ]</span>
+                                <div className={`text-[9px] mb-0.5 flex justify-between items-end ${paradoxLevel > 0 ? 'text-red-500' : 'text-cyan-600'}`}>
+                                    <span className="shrink-0 mr-2">LOCAL SIDEREAL TIME</span>
+                                    <span className="truncate text-right max-w-[200px]">LOC: {currentLocName}</span>
                                 </div>
                                 <div className="flex items-end justify-between">
                                     <div className="flex items-baseline gap-2">
@@ -571,8 +593,8 @@
                                             {displayTime}<span className={`text-xs ${bleedActive ? '' : 'text-cyan-600'}`}>.{displayMs}</span>
                                         </div>
                                     </div>
-                                    <div className={`text-[10px] text-right max-w-[130px] leading-tight truncate ${paradoxLevel > 0 ? 'text-red-400' : 'text-cyan-500'}`}>
-                                        LOC: {currentLocName}
+                                    <div className={`text-[9px] tracking-widest text-right shrink-0 pb-1 ${paradoxLevel > 0 ? 'text-red-400' : 'text-cyan-700'}`}>
+                                        [ {currentYear === 2026 ? 'ANCHOR SECURED' : 'TEMPORAL DRIFT'} ]
                                     </div>
                                 </div>
                             </div>
@@ -739,7 +761,7 @@
                             {/* Time Dilation */}
                             <div>
                                 <div className={`text-[10px] mb-2 ${paradoxLevel > 0 ? 'text-red-500' : 'text-cyan-700'}`}>TIME DILATION</div>
-                                <input type="range" min="1" max="100" defaultValue="50" onInput={() => handleFidget(1)} className="w-full fidget-slider" />
+                                <input type="range" min="1" max="100" defaultValue="50" onInput={() => handleFidget(/* defaults to max 10 */)} className="w-full fidget-slider" />
                             </div>
 
                             {/* Flux Interval Wheel */}
